@@ -17,10 +17,12 @@
     "node": ">=20.9.0"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.65",
     "@mastra/core": "^0.24.0",
     "@mastra/evals": "^0.14.3",
     "@mastra/libsql": "^0.16.2",
     "@mastra/loggers": "^0.10.19",
+    "@mastra/mcp": "^0.14.2",
     "@mastra/memory": "^0.15.11",
     "zod": "^4.1.12"
   },
