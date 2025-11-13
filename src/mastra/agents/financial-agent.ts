@@ -17,6 +17,10 @@ const mcp = new MCPClient({
         GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_TOKEN || "",
       },
     },
+    hackernews: {
+      command: "npx",
+      args: ["-y", "@devabdultech/hn-mcp-server"],
+    },
   },
 });
 
@@ -72,7 +76,14 @@ MCP INTEGRATIONS
 
    Example usage:
    - First ask: "Which repository would you like me to check? Please provide it in the format owner/repo"
-   - Then use the tools with the provided repository information`,
+   - Then use the tools with the provided repository information
+
+3. Hacker News:
+   - Use these tools to access and summarize technology news and discussions
+   - Get top stories, latest news, best posts, and trending topics
+   - Search for specific topics or keywords in Hacker News
+   - No authentication required - instant access to tech community insights
+   - Help users stay informed about technology trends and discussions`,
   model: openai("gpt-4o"), // You can use "gpt-3.5-turbo" if you prefer
   tools: {
     getTransactionsTool,
