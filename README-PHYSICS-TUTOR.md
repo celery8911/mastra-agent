@@ -152,9 +152,29 @@ const exportResult = await agent.tools.exportWordTool.execute({
 });
 
 console.log(`文档已导出：${exportResult.filepath}`);
+console.log(`下载链接：http://localhost:4111${exportResult.downloadUrl}`);
 ```
 
-导出的文件默认保存在 `data/exports/` 目录下。
+#### 方式4: 在对话中请求导出（最简单）
+
+直接与Agent对话：
+```
+用户: 帮我把这道题目和解答导出成Word文档
+```
+
+Agent会自动：
+1. 调用export-word工具生成文档
+2. 返回可点击的下载链接
+3. 用户可以直接点击下载
+
+**示例输出**：
+```markdown
+📥 **Word文档已生成！**
+
+点击下载：[下载物理题解答.docx](http://localhost:4111/api/download/physics-solutions-1234567890.docx)
+
+或复制链接：http://localhost:4111/api/download/physics-solutions-1234567890.docx
+```
 
 ## 工具说明
 
@@ -168,24 +188,48 @@ console.log(`文档已导出：${exportResult.filepath}`);
 
 **输出**:
 - `success`: 是否成功
-- `filepath`: 文件路径
+- `filepath`: 服务器文件路径
 - `fileSize`: 文件大小
+- `downloadUrl`: 下载URL（如：`/api/download/physics-solutions-1234567890.docx`）
+- `filename`: 文件名
+
+### 2. 文件下载API
+
+系统提供了文件下载API：
+
+**列出所有文件**:
+```bash
+curl http://localhost:4111/api/download/
+```
+
+**下载单个文件**:
+```bash
+curl -O http://localhost:4111/api/download/文件名.docx
+```
+
+或直接在浏览器中访问下载链接。
+
+> 💡 详细的API文档请查看 [WORD-EXPORT-GUIDE.md](./WORD-EXPORT-GUIDE.md)
 
 ## 项目结构
 
 ```
-src/mastra/
-├── agents/
-│   └── physics-tutor-agent.ts     # 物理解题Agent（内置视觉识别）
-├── tools/
-│   └── physics/
-│       └── export-word-tool.ts    # Word导出工具
-└── types/
-    └── physics-types.ts            # 类型定义
+src/
+├── mastra/
+│   ├── agents/
+│   │   └── physics-tutor-agent.ts     # 物理解题Agent（内置视觉识别）
+│   ├── tools/
+│   │   └── physics/
+│   │       └── export-word-tool.ts    # Word导出工具
+│   ├── types/
+│   │   └── physics-types.ts            # 类型定义
+│   └── index.ts                        # Mastra配置
+└── api/
+    └── download.ts                     # 文件下载API
 
 data/
 ├── physics-memory.db # 记忆数据库
-└── exports/          # 导出的文档
+└── exports/          # 导出的Word文档
 ```
 
 ## 使用示例

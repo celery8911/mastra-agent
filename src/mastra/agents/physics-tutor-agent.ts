@@ -85,7 +85,15 @@ export const physicsTutorAgent = new Agent({
     3. 相关物理公式
     4. 详细计算步骤
     5. 易错点提示]
-3. 如果用户需要导出Word文档，使用 export-word 工具生成文档
+3. 如果用户需要导出Word文档：
+   - 使用 export-word 工具生成文档
+   - 工具会返回文件的本地路径
+   - 你必须在回复中告知用户文件位置（使用工具返回的实际文件名）：
+     📥 Word文档已生成！
+
+     文件保存位置：data/exports/文件名.docx
+
+     您可以在项目目录的 data/exports 文件夹中找到导出的Word文档
 
 解答要求：
 - 答案要准确，使用正确的物理单位

@@ -36,8 +36,8 @@ export const exportWordTool = createTool({
     outputFilename: z.string().optional().describe('输出文件名（不含扩展名）'),
   }),
 
-  execute: async ({ input }) => {
-    const { problems, outputFilename } = input;
+  execute: async ({ context }) => {
+    const { problems, outputFilename } = context;
 
     try {
       // 创建Word文档
@@ -205,10 +205,15 @@ export const exportWordTool = createTool({
 
       const stats = await fs.stat(filepath);
 
+      // 生成下载URL
+      const downloadUrl = `/files/${filename}.docx`;
+
       return {
         success: true,
         filepath,
         fileSize: stats.size,
+        downloadUrl,
+        filename: `${filename}.docx`,
       } as ExportResult;
     } catch (error) {
       console.error('Word导出失败:', error);

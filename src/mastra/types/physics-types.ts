@@ -16,4 +16,7 @@ export interface ExportResult {
   success: boolean;
   filepath: string;
   fileSize: number;
+  downloadUrl?: string;    // 下载URL
+  filename?: string;       // 文件名
+  error?: string;          // 错误信息（当success为false时）
 }
