@@ -1,8 +1,14 @@
 import { Agent } from '@mastra/core/agent';
+import { createDeepSeek } from '@ai-sdk/deepseek';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
 import { weatherTool } from '../tools/weather-tool';
 import { scorers } from '../scorers/weather-scorer';
+
+// Configure DeepSeek provider
+const deepseek = createDeepSeek({
+  apiKey: process.env.DEEPSEEK_API_KEY || '',
+});
 
 export const weatherAgent = new Agent({
   name: 'Weather Agent',
@@ -20,7 +26,7 @@ export const weatherAgent = new Agent({
 
       Use the weatherTool to fetch current weather data.
 `,
-  model: 'openai/gpt-4o-mini',
+  model: deepseek('deepseek-chat'),
   tools: { weatherTool },
   scorers: {
     toolCallAppropriateness: {

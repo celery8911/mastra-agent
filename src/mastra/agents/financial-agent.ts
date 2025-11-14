@@ -1,10 +1,16 @@
 import { Agent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
+import { createDeepSeek } from "@ai-sdk/deepseek";
 import { Memory } from "@mastra/memory";
 import { LibSQLStore, LibSQLVector } from "@mastra/libsql";
 import { MCPClient } from "@mastra/mcp";
 import { getTransactionsTool } from "../tools/get-transactions-tool";
 import path from "path";
+
+// Configure DeepSeek provider
+const deepseek = createDeepSeek({
+  apiKey: process.env.DEEPSEEK_API_KEY || "",
+});
 
 const mcp = new MCPClient({
   servers: {
@@ -34,6 +40,40 @@ const mcp = new MCPClient({
 
 // Initialize MCP tools
 const mcpTools = await mcp.getTools();
+
+const memory = new Memory({
+  storage: new LibSQLStore({
+    url: "file:../../data/memory.db", // Stores in data directory relative to output
+  }),
+  vector: new LibSQLVector({
+    connectionUrl: "file:../../data/memory.db", // Same database for vector storage
+  }),
+  embedder: openai.embedding("text-embedding-3-small"),
+  options: {
+    // Keep last 20 messages in context
+    lastMessages: 20,
+    // Enable semantic search to find relevant past conversations
+    semanticRecall: {
+      topK: 3,
+      messageRange: {
+        before: 2,
+        after: 1,
+      },
+    },
+    // Enable working memory to remember user information
+    workingMemory: {
+      enabled: true,
+      template: `
+      <user>
+         <first_name></first_name>
+         <username></username>
+         <preferences></preferences>
+         <interests></interests>
+         <conversation_style></conversation_style>
+       </user>`,
+    },
+  },
+});
 
 export const financialAgent = new Agent({
   name: "Financial Assistant Agent",
@@ -98,15 +138,22 @@ MCP INTEGRATIONS
    - Use this to store financial reports, analysis results, and other information for later use
    - You can organize information for the user and maintain persistent data
    - Use the notes directory to keep track of to-do list items and financial goals for the user
-   - Notes dir: ${path.join(process.cwd(), "..", "..", "notes")}`,
-  model: openai("gpt-4o"), // You can use "gpt-3.5-turbo" if you prefer
+   - Notes dir: ${path.join(process.cwd(), "..", "..", "notes")}
+
+MEMORY CAPABILITIES
+- You have access to conversation memory and can remember details about users
+- When you learn something about a user, update their working memory using the appropriate tool
+- This includes:
+  - Their financial goals and preferences
+  - Their spending habits and patterns
+  - Their communication style (formal, casual, etc.)
+  - Any other relevant information that would help personalize financial advice
+- Always maintain a helpful and professional tone
+- Use the stored information to provide more personalized financial insights`,
+  model: deepseek("deepseek-chat"), // Using DeepSeek's chat model
   tools: {
     getTransactionsTool,
     ...mcpTools, // Will be added after MCP servers are configured
   },
-  memory: new Memory({
-    storage: new LibSQLStore({
-      url: "file:../../memory.db", // local file-system database. Location is relative to the output directory `.mastra/output`
-    }),
-  }), // Add memory here
+  memory,
 });
