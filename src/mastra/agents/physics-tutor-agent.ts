@@ -2,15 +2,36 @@ import { Agent } from '@mastra/core/agent';
 import { google } from '@ai-sdk/google';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore, LibSQLVector } from '@mastra/libsql';
-import { exportWordTool } from '../tools/physics/export-word-tool';
+import { MCPClient } from '@mastra/mcp';
+import { generateWordContent } from '../tools/physics/generate-word-content';
+import path from 'path';
+
+// Configure MCP Filesystem for exports
+const mcp = new MCPClient({
+  servers: {
+    filesystem: {
+      command: 'npx',
+      args: [
+        '-y',
+        '@modelcontextprotocol/server-filesystem',
+        path.join(process.cwd(), '..', '..', 'data', 'exports'), // relative to output directory
+      ],
+    },
+  },
+});
+
+// Initialize MCP tools
+const mcpTools = await mcp.getTools();
 
 // Configure Memory System
+// Use absolute path construction for database to avoid path resolution issues
+const dbPath = path.join(process.cwd(), '..', '..', 'data', 'physics-memory.db');
 const physicsMemory = new Memory({
   storage: new LibSQLStore({
-    url: 'file:../../data/physics-memory.db', // Stores in data directory relative to output
+    url: `file:${dbPath}`, // Use absolute path with file: prefix
   }),
   vector: new LibSQLVector({
-    connectionUrl: 'file:../../data/physics-memory.db', // Same database for vector storage
+    connectionUrl: `file:${dbPath}`, // Same database for vector storage
   }),
   embedder: google.textEmbedding('text-embedding-004'), // 使用Gemini的embedding模型
   options: {
@@ -86,14 +107,38 @@ export const physicsTutorAgent = new Agent({
     4. 详细计算步骤
     5. 易错点提示]
 3. 如果用户需要导出Word文档：
-   - 使用 export-word 工具生成文档
-   - 工具会返回文件的本地路径
-   - 你必须在回复中告知用户文件位置（使用工具返回的实际文件名）：
-     📥 Word文档已生成！
+   - 使用 docx 库在内存中生成 Word 文档内容
+   - 使用 MCP filesystem write_file 工具将文档保存到目录
+   - 文件名格式：answer-{timestamp}.docx 或用户指定的名称
+   - 告知用户文件已保存及其位置
 
-     文件保存位置：data/exports/文件名.docx
+文件系统功能（通过 MCP Filesystem）：
+- 你拥有对 data/exports 目录的完整读写权限
+- 使用 MCP filesystem 工具进行所有文件操作：
+  * write_file: 写入新文件或覆盖现有文件
+  * read_file: 读取文件内容
+  * list_directory: 列出目录中的文件
+- 所有导出的文件都保存在 data/exports 文件夹中
+- 用户可以在项目目录的 data/exports 文件夹中找到导出的Word文档
 
-     您可以在项目目录的 data/exports 文件夹中找到导出的Word文档
+导出Word文档的步骤：
+1. 收集题目信息（题目文字、答案、考点、解析）
+2. 调用 generate-word-content 工具生成 Word 文档的 base64 内容
+   - 输入：problemText, answer, keyPoints（数组）, explanation
+   - 输出：base64Content 和 suggestedFilename
+3. 使用 MCP filesystem write_file 工具保存文件
+   - path: 使用工具返回的 suggestedFilename（如 answer-1234567890.docx）
+   - content: 使用工具返回的 base64Content
+   - encoding: 设置为 "base64"
+4. 告知用户文件已成功保存：
+   - 文件名：answer-{timestamp}.docx
+   - 位置：data/exports/answer-{timestamp}.docx
+   - 用户可以在项目的 data/exports 文件夹中找到该文件
+
+重要提示：
+- 必须先调用 generate-word-content 获取 base64 内容
+- 然后使用 MCP write_file 工具保存，encoding 参数必须设置为 "base64"
+- 两个工具必须按顺序调用，不能跳过任何一步
 
 解答要求：
 - 答案要准确，使用正确的物理单位
@@ -129,7 +174,8 @@ export const physicsTutorAgent = new Agent({
   model: google('gemini-2.5-flash'), // 使用Gemini模型（支持视觉、成本低、速度快）
 
   tools: {
-    exportWordTool,
+    generateWordContent, // 生成 Word 文档内容的工具
+    ...mcpTools, // 包含 MCP Filesystem 工具用于文件操作
   },
 
   memory: physicsMemory,
