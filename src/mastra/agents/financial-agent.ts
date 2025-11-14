@@ -1,9 +1,10 @@
 import { Agent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
 import { Memory } from "@mastra/memory";
-import { LibSQLStore } from "@mastra/libsql";
+import { LibSQLStore, LibSQLVector } from "@mastra/libsql";
 import { MCPClient } from "@mastra/mcp";
 import { getTransactionsTool } from "../tools/get-transactions-tool";
+import path from "path";
 
 const mcp = new MCPClient({
   servers: {
@@ -20,6 +21,13 @@ const mcp = new MCPClient({
     hackernews: {
       command: "npx",
       args: ["-y", "@devabdultech/hn-mcp-server"],
+    },
+    textEditor: {
+      command: "pnpx",
+      args: [
+        "@modelcontextprotocol/server-filesystem",
+        path.join(process.cwd(), "..", "..", "notes"), // relative to output directory
+      ],
     },
   },
 });
@@ -83,7 +91,14 @@ MCP INTEGRATIONS
    - Get top stories, latest news, best posts, and trending topics
    - Search for specific topics or keywords in Hacker News
    - No authentication required - instant access to tech community insights
-   - Help users stay informed about technology trends and discussions`,
+   - Help users stay informed about technology trends and discussions
+
+4. Filesystem:
+   - You have filesystem read/write access to a notes directory
+   - Use this to store financial reports, analysis results, and other information for later use
+   - You can organize information for the user and maintain persistent data
+   - Use the notes directory to keep track of to-do list items and financial goals for the user
+   - Notes dir: ${path.join(process.cwd(), "..", "..", "notes")}`,
   model: openai("gpt-4o"), // You can use "gpt-3.5-turbo" if you prefer
   tools: {
     getTransactionsTool,
